@@ -1,2 +1,6 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^LICENSE\.md$
+.claude
+TODO.md
+analysis_test.R
