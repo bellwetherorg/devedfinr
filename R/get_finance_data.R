@@ -19,26 +19,26 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Get data for all states for 2022
+#' # get data for all states for 2022
 #' df <- get_finance_data(yr = "2022", geo = "all")
 #'
-#' # Get data for Kentucky for 2020-2022
+#' # get data for Kentucky for 2020-2022
 #' ky_data <- get_finance_data(yr = "2020:2022", geo = "KY")
 #'
-#' # Get data for multiple states for all available years
+#' # get data for multiple states for all available years
 #' regional_data <- get_finance_data(yr = "all", geo = "IN,KY,OH,TN")
 #'
-#' # Use with pipe
+#' # use with pipe
 #' library(dplyr)
 #' get_finance_data(yr = "2022", geo = "KY") |>
-#'   select(district_name, total_revenue, total_expenditure) |>
-#'   arrange(desc(total_revenue))
+#'   select(district_name, rev_total, exp_curr_total) |>
+#'   arrange(desc(rev_total))
 #' }
 get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = FALSE) {
-  # Define valid years (assuming 2012-2022 based on filename)
+  # define valid years (assuming 2012-2022 based on filename)
   valid_years <- 2012:2022
 
-  # Define valid state codes (all US states + DC)
+  # define valid state codes (all US states + DC)
   valid_states <- c(
     "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
     "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
@@ -47,10 +47,10 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
     "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC"
   )
 
-  # Validate year parameter
+  # validate year parameter
   if (yr != "all") {
     if (grepl(":", yr)) {
-      # Validate year range
+      # validate year range
       yr_range <- strsplit(yr, ":")[[1]]
       if (length(yr_range) != 2) {
         cli::cli_abort("Year range must be in format 'start:end', e.g., '2020:2022'.")
@@ -71,7 +71,7 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
         cli::cli_abort("Start year must be less than or equal to end year.")
       }
     } else {
-      # Validate single year
+      # validate single year
       single_yr <- suppressWarnings(as.numeric(yr))
       if (is.na(single_yr)) {
         cli::cli_abort("Year must be a valid number, a range (e.g., '2020:2022'), or 'all'.")
@@ -83,11 +83,11 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
     }
   }
 
-  # Validate geography parameter
+  # validate geography parameter
   if (geo != "all") {
     states <- strsplit(geo, ",")[[1]]
 
-    # Check if all provided states are valid
+    # check if all provided states are valid
     invalid_states <- states[!states %in% valid_states]
     if (length(invalid_states) > 0) {
       cli::cli_abort("Invalid state code(s): {paste(invalid_states, collapse = ', ')}.
@@ -95,14 +95,14 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
     }
   }
 
-  # URL for the RDS file
+  # url for the .rds file
   url <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_clean.rds"
 
-  # Cache handling
+  # cache handling
   cache_name <- "edfinr_data_fy12_fy22_clean.rds"
   cache_file_path <- cache_file(cache_name)
 
-  # Check if we need to download the data
+  # check if we need to download the data
   download_required <- refresh || !is_cache_current(cache_name)
 
   if (download_required) {
@@ -110,7 +110,7 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
       cli::cli_alert_info("Downloading education finance data...")
     }
 
-    # Download the file to cache
+    # download the file to cache
     utils::download.file(url, cache_file_path, mode = "wb", quiet = quiet)
 
     if (!quiet) {
@@ -120,32 +120,32 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
     cli::cli_alert_info("Using cached data. Use refresh = TRUE to download fresh data.")
   }
 
-  # Read the RDS file from cache
+  # read the .rds file from cache
   data <- readRDS(cache_file_path)
 
-  # Convert to tibble if it's not already
+  # convert to tibble
   if (!inherits(data, "tbl_df")) {
     data <- tibble::as_tibble(data)
   }
 
-  # Process year parameter
+  # process year parameter
   if (yr != "all") {
     if (grepl(":", yr)) {
-      # Handle year range (e.g., "2020:2022")
+      # handle year range (e.g., "2020:2022")
       yr_range <- strsplit(yr, ":")[[1]]
       start_yr <- as.numeric(yr_range[1])
       end_yr <- as.numeric(yr_range[2])
       years <- start_yr:end_yr
       data <- dplyr::filter(data, .data$year %in% years)
     } else {
-      # Handle single year
+      # handle single year
       data <- dplyr::filter(data, .data$year == as.numeric(yr))
     }
   }
 
-  # Process geography parameter
+  # process geography parameter
   if (geo != "all") {
-    # Handle comma-separated list of states
+    # handle comma-separated list of states
     states <- strsplit(geo, ",")[[1]]
     data <- dplyr::filter(data, .data$state %in% states)
   }

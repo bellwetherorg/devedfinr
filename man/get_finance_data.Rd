@@ -32,19 +32,19 @@ and community data from the ACS 5-Year Estimates.
 }
 \examples{
 \dontrun{
-# Get data for all states for 2022
+# get data for all states for 2022
 df <- get_finance_data(yr = "2022", geo = "all")
 
-# Get data for Kentucky for 2020-2022
+# get data for Kentucky for 2020-2022
 ky_data <- get_finance_data(yr = "2020:2022", geo = "KY")
 
-# Get data for multiple states for all available years
+# get data for multiple states for all available years
 regional_data <- get_finance_data(yr = "all", geo = "IN,KY,OH,TN")
 
-# Use with pipe
+# use with pipe
 library(dplyr)
 get_finance_data(yr = "2022", geo = "KY") |>
-  select(district_name, total_revenue, total_expenditure) |>
-  arrange(desc(total_revenue))
+  select(district_name, rev_total, exp_curr_total) |>
+  arrange(desc(rev_total))
 }
 }

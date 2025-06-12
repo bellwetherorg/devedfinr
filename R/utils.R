@@ -25,32 +25,48 @@ list_variables <- function(category = "all") {
   variables <- tibble::tibble(
     name = c(
       # These are placeholder examples - should be updated with real column names
-      "year", "state", "district_id", "district_name", "county_name",
-      "total_revenue", "state_revenue", "local_revenue", "federal_revenue",
-      "total_expenditure", "instruction_expenditure", "support_services_expenditure",
-      "capital_outlay", "enrollment", "frpl_percent", "median_household_income",
-      "poverty_percent", "population"
+      "ncesid", "year", "state", "dist_name", "enroll", "rev_total_pp", "rev_local_pp",
+      "rev_state_pp", "rev_fed_pp", "rev_total", "rev_local", "rev_state", "rev_fed", "exp_cur_pp",
+      "rev_exp_pp_diff", "exp_cur_st_loc", "exp_cur_fed", "exp_cur_total", "mhi", "mpv", "cpi_sy12",
+       "total_pop", "student_pop", "stpov_pop", "stpov_pct", "cong_dist", "state_leaid", "county", 
+      "cbsa", "urbanicity", "schlev", "lea_type", "lea_type_id"    
     ),
     type = c(
-      "numeric", "character", "character", "character", "character",
-      "numeric", "numeric", "numeric", "numeric",
-      "numeric", "numeric", "numeric",
-      "numeric", "numeric", "numeric", "numeric",
-      "numeric", "numeric"
+      "character", "character", "character", "character",
+      "numeric", "numeric", "numeric", "numeric", "numeric",
+      "numeric", "numeric", "numeric", "numeric", "numeric",
+      "numeric", "numeric", "numeric", "numeric", "numeric",
+      "numeric", "numeric", "numeric", "numeric", "numeric",
+      "numeric", "integer", "character", "character", "character",
+      "factor", "character", "factor", "integer"
     ),
     category = c(
-      "time", "geographic", "geographic", "geographic", "geographic",
-      "finance", "finance", "finance", "finance",
-      "finance", "finance", "finance",
-      "finance", "demographic", "demographic", "demographic",
-      "demographic", "demographic"
+      "id", "time", 
+      "geographic", "id",
+      "demographic",
+      "revenue", "revenue", "revenue", "revenue", 
+      "revenue", "revenue", "revenue", "revenue", 
+      "expenditure", "expenditure", "expenditure", 
+      "expenditure", "expenditure",
+      "economic", "economic", "economic",
+      "demographic", "demographic", "demographic", "demographic",
+      "governance", "id", "geographic", "geographic",
+      "geographic", "governance", "governance", "governance"
     ),
     description = c(
-      "Fiscal year", "State abbreviation", "District ID", "District name", "County name",
-      "Total revenue from all sources", "Revenue from state sources", "Revenue from local sources", "Revenue from federal sources",
-      "Total expenditure", "Expenditure on instruction", "Expenditure on support services",
-      "Capital outlay expenditure", "Total student enrollment", "Percentage of students eligible for free/reduced price lunch", "Median household income in district",
-      "Percentage of school-age children in poverty", "Total population in district"
+      "NCES ID", "School year, listed as latest year. Ex. '2012' = '2011-2012'", "State abbreviation",
+      "District name", "District enrollment",
+      "Total revenue per-pupil from all sources", "Revenue per-pupil from local sources", 
+      "Revenue per-pupil from state sources", "Revenue per-pupil from federal sources",
+      "Total revenue from all sources", "Revenue from local sources", "Revenue from state sources", "Revenue from federal sources",
+      "Total current expenditure per-pupil", "Revenue per-pupil minus current expentiture per-pupil",
+      "Current expenditure, state and local", "Current expenditure, federal", "Total current expenditure",
+      "Median Household Income", "Median Property Value", "Consumer Price Index, 1 = 2011-2012",
+      "Total population", "Total student-aged population", "Student-aged population in poverty", 
+      "Percentage of student-aged population in poverty", 
+      "Congressional district, listed as 2-digit state code and 2-digit congressional district. Ex. '2001' = KY-01",
+      "State LEA ID", "County", "CBSA (if assigned)", "Urbanicity, condensed into four categories: 'City', 'Suburb', 'Town', and 'Rural'",
+      "School level", "LEA type", "LEA type ID"
     )
   )
   
