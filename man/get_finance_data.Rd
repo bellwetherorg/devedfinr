@@ -4,7 +4,13 @@
 \alias{get_finance_data}
 \title{Get Education Finance Data}
 \usage{
-get_finance_data(yr = "2022", geo = "all", refresh = FALSE, quiet = FALSE)
+get_finance_data(
+  yr = "2022",
+  geo = "all",
+  dataset_type = "skinny",
+  refresh = FALSE,
+  quiet = FALSE
+)
 }
 \arguments{
 \item{yr}{A string specifying the year(s) to retrieve. Can be a single year ("2022"),
@@ -12,6 +18,9 @@ a range ("2020:2022"), or "all" for all available years.}
 
 \item{geo}{A string specifying the geographic scope. Can be "all" for all states,
 a single state code ("KY"), or a comma-separated list of state codes ("IN,KY,OH,TN").}
+
+\item{dataset_type}{A string specifying whether to download the "skinny" (default) or "full" dataset.
+The skinny version excludes detailed expenditure data for faster downloads.}
 
 \item{refresh}{A logical value indicating whether to force a refresh of the cached data.
 Default is FALSE, which uses cached data if available.}
@@ -40,6 +49,9 @@ ky_data <- get_finance_data(yr = "2020:2022", geo = "KY")
 
 # get data for multiple states for all available years
 regional_data <- get_finance_data(yr = "all", geo = "IN,KY,OH,TN")
+
+# get full dataset with detailed expenditure data
+full_data <- get_finance_data(yr = "2022", geo = "KY", dataset_type = "full")
 
 # use with pipe
 library(dplyr)

@@ -4,11 +4,14 @@
 \alias{list_variables}
 \title{List available variables in the education finance dataset}
 \usage{
-list_variables(category = "all")
+list_variables(dataset_type = "skinny", category = "all")
 }
 \arguments{
-\item{category}{Optional. Filter variables by category: "finance", "demographic", 
-"geographic", or "all" (default).}
+\item{dataset_type}{A string specifying whether to list variables for "skinny" (default) or "full" dataset.}
+
+\item{category}{Optional. Filter variables by category: "id", "time", "geographic", 
+"demographic", "revenue", "expenditure", "economic", "governance", 
+or "all" (default).}
 }
 \value{
 A tibble with variable information
@@ -20,10 +23,13 @@ and brief descriptions.
 }
 \examples{
 \dontrun{
-# List all available variables
+# List all available variables in skinny dataset
 vars <- list_variables()
 
-# List only finance variables
-finance_vars <- list_variables("finance")
+# List all variables in full dataset
+full_vars <- list_variables(dataset_type = "full")
+
+# List only expenditure variables in full dataset
+exp_vars <- list_variables(dataset_type = "full", category = "expenditure")
 }
 }

@@ -12,6 +12,8 @@
 #'           a single state code ("KY"), or a comma-separated list of state codes ("IN,KY,OH,TN").
 #' @param refresh A logical value indicating whether to force a refresh of the cached data.
 #'                Default is FALSE, which uses cached data if available.
+#' @param dataset_type A string specifying whether to download the "skinny" (default) or "full" dataset.
+#'                     The skinny version excludes detailed expenditure data for faster downloads.
 #' @param quiet A logical value indicating whether to suppress download progress messages.
 #'              Default is FALSE.
 #' @return A tibble containing the requested education finance data.
@@ -28,13 +30,16 @@
 #' # get data for multiple states for all available years
 #' regional_data <- get_finance_data(yr = "all", geo = "IN,KY,OH,TN")
 #'
+#' # get full dataset with detailed expenditure data
+#' full_data <- get_finance_data(yr = "2022", geo = "KY", dataset_type = "full")
+#'
 #' # use with pipe
 #' library(dplyr)
 #' get_finance_data(yr = "2022", geo = "KY") |>
 #'   select(district_name, rev_total, exp_curr_total) |>
 #'   arrange(desc(rev_total))
 #' }
-get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = FALSE) {
+get_finance_data <- function(yr = "2022", geo = "all", dataset_type = "skinny", refresh = FALSE, quiet = FALSE) {
   # define valid years (assuming 2012-2022 based on filename)
   valid_years <- 2012:2022
 
@@ -95,14 +100,20 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
     }
   }
 
+  # validate dataset_type parameter
+  if (!dataset_type %in% c("skinny", "full")) {
+    cli::cli_abort("dataset_type must be either 'skinny' or 'full'.")
+  }
+
   # url for the .rds file
-  # url <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_clean.rds"
   url_full <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_full.rds"
   url_skinny <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_skinny.rds"
 
+  # select URL based on dataset_type
+  url <- if (dataset_type == "full") url_full else url_skinny
 
-  # cache handling
-  cache_name <- "edfinr_data_fy12_fy22_clean.rds"
+  # cache handling - different cache files for different dataset types
+  cache_name <- paste0("edfinr_data_fy12_fy22_", dataset_type, ".rds")
   cache_file_path <- cache_file(cache_name)
 
   # check if we need to download the data
