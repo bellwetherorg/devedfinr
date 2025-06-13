@@ -96,7 +96,10 @@ get_finance_data <- function(yr = "2022", geo = "all", refresh = FALSE, quiet = 
   }
 
   # url for the .rds file
-  url <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_clean.rds"
+  # url <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_clean.rds"
+  url_full <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_full.rds"
+  url_skinny <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_skinny.rds"
+
 
   # cache handling
   cache_name <- "edfinr_data_fy12_fy22_clean.rds"
