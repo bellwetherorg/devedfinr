@@ -64,12 +64,15 @@ unique(list_variables(dataset_type = "full")$category)
 list_variables() |>
   filter(category == "revenue") |>
   select(name, description)
+
+# get list of valid state codes
+states <- get_states()
 ```
 
 ### Working with the Data
 
 ```r
-library(dplyr)
+library(tidyverse)
 
 # basic analysis with skinny dataset
 get_finance_data(yr = "2022", geo = "KY") |>
@@ -79,13 +82,11 @@ get_finance_data(yr = "2022", geo = "KY") |>
 
 # analysis with full dataset - examining detailed expenditures
 get_finance_data(yr = "2022", geo = "KY", dataset_type = "full") |>
-  select(dist_name, exp_instr_total, exp_supp_stu_total, 
-         exp_tech_equip, exp_covid_total) |>
+  select(ncesid, state, dist_name, enroll, exp_covid_total) |>
   filter(!is.na(exp_covid_total)) |>
-  arrange(desc(exp_covid_total))
+  mutate(exp_covid_total_pp = exp_covid_total / enroll) |>
+  arrange(desc(exp_covid_total_pp))
 
-# get list of valid state codes
-states <- get_states()
 ```
 
 ## Data Sources
