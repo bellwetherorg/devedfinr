@@ -23,13 +23,13 @@ and brief descriptions.
 }
 \examples{
 \dontrun{
-# List all available variables in skinny dataset
+# list all available variables in skinny dataset
 vars <- list_variables()
 
-# List all variables in full dataset
+# list all variables in full dataset
 full_vars <- list_variables(dataset_type = "full")
 
-# List only expenditure variables in full dataset
+# list only expenditure variables in full dataset
 exp_vars <- list_variables(dataset_type = "full", category = "expenditure")
 }
 }
