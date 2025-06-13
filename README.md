@@ -13,33 +13,79 @@ devtools::install_github("bellwetherorg/evedfinr")
 
 ## Usage
 
+### Getting Finance Data
+
+The `get_finance_data()` function allows you to download education finance data with options for year ranges, geographic scope, and dataset type (skinny or full).
+
 ```r
 library(edfinr)
 
-# Get data for all states for 2022
+# get data for all states for 2022 (uses skinny dataset by default)
 df <- get_finance_data(yr = "2022", geo = "all")
 
-# Get data for Kentucky for 2020-2022
+# get data for Kentucky for 2020-2022
 ky_data <- get_finance_data(yr = "2020:2022", geo = "KY")
 
-# Get data for multiple states for all available years
+# get data for multiple states for all available years
 regional_data <- get_finance_data(yr = "all", geo = "IN,KY,OH,TN")
 
-# View available variables
-vars <- list_variables()
+# get full dataset with detailed expenditure variables
+# the full dataset includes 48 additional expenditure variables
+full_data <- get_finance_data(yr = "2022", geo = "KY", dataset_type = "full")
 
-# View only revenue variables
-finance_vars <- list_variables(category = "revenue")
+# compare dataset sizes
+skinny_data <- get_finance_data(yr = "2022", geo = "KY", dataset_type = "skinny")
+ncol(skinny_data)  # 41 variables
+ncol(full_data)    # 89 variables
+```
 
-# Get list of valid state codes
-states <- get_states()
+### Exploring Available Variables
 
-# Use with pipe and tidyverse
+The `list_variables()` function helps you understand what data is available in each dataset type.
+
+```r
+# view all variables in the skinny dataset (default)
+vars_skinny <- list_variables()
+nrow(vars_skinny)  # 41 variables
+
+# view all variables in the full dataset
+vars_full <- list_variables(dataset_type = "full")
+nrow(vars_full)    # 89 variables
+
+# filter variables by category
+revenue_vars <- list_variables(category = "revenue")
+expenditure_vars <- list_variables(dataset_type = "full", category = "expenditure")
+
+# see what categories are available
+unique(list_variables(dataset_type = "full")$category)
+# [1] "id" "time" "geographic" "demographic" "revenue" "expenditure" "economic" "governance"
+
+# view variable details
+list_variables() |>
+  filter(category == "revenue") |>
+  select(name, description)
+```
+
+### Working with the Data
+
+```r
 library(dplyr)
 
+# basic analysis with skinny dataset
 get_finance_data(yr = "2022", geo = "KY") |>
-  select(district_name, rev_total_pp, exp_total_pp) |>
-  arrange(desc(rev_total_pp))
+  select(dist_name, enroll, rev_total_pp, exp_cur_pp) |>
+  arrange(desc(rev_total_pp)) |>
+  head(10)
+
+# analysis with full dataset - examining detailed expenditures
+get_finance_data(yr = "2022", geo = "KY", dataset_type = "full") |>
+  select(dist_name, exp_instr_total, exp_supp_stu_total, 
+         exp_tech_equip, exp_covid_total) |>
+  filter(!is.na(exp_covid_total)) |>
+  arrange(desc(exp_covid_total))
+
+# get list of valid state codes
+states <- get_states()
 ```
 
 ## Data Sources
