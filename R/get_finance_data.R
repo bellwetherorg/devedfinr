@@ -10,10 +10,17 @@
 #'           a range ("2020:2022"), or "all" for all available years.
 #' @param geo A string specifying the geographic scope. Can be "all" for all states,
 #'           a single state code ("KY"), or a comma-separated list of state codes ("IN,KY,OH,TN").
-#' @param refresh A logical value indicating whether to force a refresh of the cached data.
 #'                Default is FALSE, which uses cached data if available.
 #' @param dataset_type A string specifying whether to download the "skinny" (default) or "full" dataset.
 #'                     The skinny version excludes detailed expenditure data for faster downloads.
+#' @param cpi_adj A string specifying the CPI adjustment baseline year. Can be "none" (default) 
+#'                 for no adjustment, or a year between 2012-2022 to use as the baseline year.
+#'                 When a year is specified (e.g., "2022"), revenue, expenditure, and economic 
+#'                 variables are adjusted to that school year's dollars using CPI averaged over 
+#'                 the months of the school year (e.g., "2022" uses the 2021-22 school year CPI).
+#'                 When cpi_adj is set to a value other than "none", a new column "cpi_adj_index" 
+#'                 will be added to the output showing the adjustment index used for each row.
+#' @param refresh A logical value indicating whether to force a refresh of the cached data.
 #' @param quiet A logical value indicating whether to suppress download progress messages.
 #'              Default is FALSE.
 #' @return A tibble containing the requested education finance data.
@@ -38,8 +45,11 @@
 #' get_finance_data(yr = "2022", geo = "KY") |>
 #'   select(district_name, rev_total, exp_curr_total) |>
 #'   arrange(desc(rev_total))
+#'   
+#' # get data adjusted to 2015 dollars
+#' adjusted_data <- get_finance_data(yr = "2020:2022", geo = "KY", cpi_adj = "2015")
 #' }
-get_finance_data <- function(yr = "2022", geo = "all", dataset_type = "skinny", refresh = FALSE, quiet = FALSE) {
+get_finance_data <- function(yr = "2022", geo = "all", dataset_type = "skinny", cpi_adj = "none", refresh = FALSE, quiet = FALSE) {
   # define valid years (assuming 2012-2022 based on filename)
   valid_years <- 2012:2022
 
@@ -104,6 +114,17 @@ get_finance_data <- function(yr = "2022", geo = "all", dataset_type = "skinny", 
   if (!dataset_type %in% c("skinny", "full")) {
     cli::cli_abort("dataset_type must be either 'skinny' or 'full'.")
   }
+  
+  # validate cpi_adj parameter
+  if (cpi_adj != "none") {
+    cpi_year <- suppressWarnings(as.numeric(cpi_adj))
+    if (is.na(cpi_year)) {
+      cli::cli_abort("cpi_adj must be 'none' or a valid year between 2012 and 2022.")
+    }
+    if (!cpi_year %in% 2012:2022) {
+      cli::cli_abort("cpi_adj year must be between 2012 and 2022.")
+    }
+  }
 
   # url for the .rds file
   url_full <- "https://edfinr-tidy-data.s3.us-east-2.amazonaws.com/edfinr_data_fy12_fy22_full.rds"
@@ -142,6 +163,21 @@ get_finance_data <- function(yr = "2022", geo = "all", dataset_type = "skinny", 
     data <- tibble::as_tibble(data)
   }
 
+  # if cpi adjustment is requested, we need to get the baseline cpi before filtering
+  baseline_cpi <- NULL
+  if (cpi_adj != "none") {
+    cpi_year <- as.numeric(cpi_adj)
+    
+    # get the cpi value for the baseline year
+    baseline_data <- dplyr::filter(data, .data$year == cpi_year)
+    
+    if (nrow(baseline_data) == 0) {
+      cli::cli_abort("No data available for the specified baseline year {cpi_year}.")
+    }
+    # use the first cpi value as they should all be the same for a given year
+    baseline_cpi <- baseline_data$cpi_sy12[1]
+  }
+
   # process year parameter
   if (yr != "all") {
     if (grepl(":", yr)) {
@@ -162,6 +198,61 @@ get_finance_data <- function(yr = "2022", geo = "all", dataset_type = "skinny", 
     # handle comma-separated list of states
     states <- strsplit(geo, ",")[[1]]
     data <- dplyr::filter(data, .data$state %in% states)
+  }
+  
+  # apply cpi adjustment if requested
+  if (cpi_adj != "none" && !is.null(baseline_cpi)) {
+    
+    # define columns to adjust
+    # revenue columns (both raw and adjusted versions)
+    revenue_cols <- c("rev_total_pp", "rev_local_pp", "rev_state_pp", "rev_fed_pp",
+                     "rev_total", "rev_local", "rev_state", "rev_fed",
+                     "rev_total_unadj", "rev_local_unadj", "rev_state_unadj", "rev_fed_unadj")
+    
+    # expenditure columns (skinny dataset)
+    expenditure_cols <- c("exp_cur_pp", "rev_exp_pp_diff", "exp_cur_st_loc", 
+                         "exp_cur_fed", "exp_cur_resa", "exp_cur_total")
+    
+    # economic columns (excluding cpi_sy12 itself)
+    economic_cols <- c("mhi", "mpv")
+    
+    # additional expenditure columns for full dataset
+    if (dataset_type == "full") {
+      full_expenditure_cols <- c("exp_emp_salary", "exp_emp_bene", "exp_textbooks", 
+        "exp_utilities", "exp_tech_supp", "exp_tech_equip", "exp_pay_private_sch", 
+        "exp_pay_charter_sch", "exp_pay_other_lea", "exp_other_sys_pay", 
+        "exp_instr_total", "exp_instr_sal", "exp_instr_bene", "exp_supp_stu_total", 
+        "exp_supp_stu_sal", "exp_supp_stu_bene", "exp_supp_instr_total", 
+        "exp_supp_instr_sal", "exp_supp_instr_bene", "exp_supp_gen_admin_total", 
+        "exp_supp_gen_admin_sal", "exp_supp_gen_admin_bene", "exp_supp_sch_admin_total", 
+        "exp_supp_sch_admin_sal", "exp_supp_sch_admin_bene", "exp_supp_ops_total", 
+        "exp_supp_opps_sal", "exp_supp_opps_bene", "exp_supp_trans_total", 
+        "exp_supp_trans_sal", "exp_supp_trans_bene", "exp_central_serv_total", 
+        "exp_central_serv_sal", "exp_central_serv_bene", "exp_noninstr_food_total", 
+        "exp_noninstr_food_sal", "exp_noninstr_food_bene", "exp_noninstr_ent_ops_total", 
+        "exp_noninstr_ent_ops_bene", "exp_noninstr_other", "exp_covid_total", 
+        "exp_covid_instr", "exp_covid_supp", "exp_covid_cap_out", "exp_covid_tech_supp", 
+        "exp_covid_tech_equip", "exp_covid_supp_plant", "exp_covid_food")
+      expenditure_cols <- c(expenditure_cols, full_expenditure_cols)
+    }
+    
+    # combine all columns to adjust
+    cols_to_adjust <- c(revenue_cols, expenditure_cols, economic_cols)
+    
+    # filter to only include columns that exist in the data
+    cols_to_adjust <- cols_to_adjust[cols_to_adjust %in% names(data)]
+    
+    # apply cpi adjustment using mutate and across
+    data <- data |>
+      dplyr::mutate(
+        # add the adjustment index column
+        cpi_adj_index = .data$cpi_sy12 / baseline_cpi,
+        # apply adjustment to financial columns
+        dplyr::across(
+          dplyr::all_of(cols_to_adjust),
+          ~ .x * .data$cpi_sy12 / baseline_cpi
+        )
+      )
   }
 
   return(data)

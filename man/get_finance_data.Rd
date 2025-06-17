@@ -8,6 +8,7 @@ get_finance_data(
   yr = "2022",
   geo = "all",
   dataset_type = "skinny",
+  cpi_adj = "none",
   refresh = FALSE,
   quiet = FALSE
 )
@@ -17,13 +18,21 @@ get_finance_data(
 a range ("2020:2022"), or "all" for all available years.}
 
 \item{geo}{A string specifying the geographic scope. Can be "all" for all states,
-a single state code ("KY"), or a comma-separated list of state codes ("IN,KY,OH,TN").}
+a single state code ("KY"), or a comma-separated list of state codes ("IN,KY,OH,TN").
+     Default is FALSE, which uses cached data if available.}
 
 \item{dataset_type}{A string specifying whether to download the "skinny" (default) or "full" dataset.
 The skinny version excludes detailed expenditure data for faster downloads.}
 
-\item{refresh}{A logical value indicating whether to force a refresh of the cached data.
-Default is FALSE, which uses cached data if available.}
+\item{cpi_adj}{A string specifying the CPI adjustment baseline year. Can be "none" (default) 
+for no adjustment, or a year between 2012-2022 to use as the baseline year.
+When a year is specified (e.g., "2022"), revenue, expenditure, and economic 
+variables are adjusted to that school year's dollars using CPI averaged over 
+the months of the school year (e.g., "2022" uses the 2021-22 school year CPI).
+When cpi_adj is set to a value other than "none", a new column "cpi_adj_index" 
+will be added to the output showing the adjustment index used for each row.}
+
+\item{refresh}{A logical value indicating whether to force a refresh of the cached data.}
 
 \item{quiet}{A logical value indicating whether to suppress download progress messages.
 Default is FALSE.}
@@ -58,5 +67,8 @@ library(dplyr)
 get_finance_data(yr = "2022", geo = "KY") |>
   select(district_name, rev_total, exp_curr_total) |>
   arrange(desc(rev_total))
+  
+# get data adjusted to 2015 dollars
+adjusted_data <- get_finance_data(yr = "2020:2022", geo = "KY", cpi_adj = "2015")
 }
 }
