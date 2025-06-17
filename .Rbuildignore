@@ -2,6 +2,3 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 .claude
-TODO.md
-analysis_test.R
-test_dataset_types.R
