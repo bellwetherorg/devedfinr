@@ -25,7 +25,7 @@ Description: Provides easy access to tidy education finance data combining
     revenue sources, expenditure categories, and demographic factors across 
     U.S. school districts.
 License: MIT + file LICENSE
-URL: https://github.com/bellwetherorg/edfinr
+URL: https://github.com/bellwetherorg/edfinr, https://bellwetherorg.github.io/devedfinr/
 BugReports: https://github.com/bellwetherorg/edfinr/issues
 Imports:
  cli,

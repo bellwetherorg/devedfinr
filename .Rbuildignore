@@ -2,3 +2,8 @@
 ^\.Rproj\.user$
 ^LICENSE\.md$
 .claude
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+index.md
