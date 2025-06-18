@@ -7,9 +7,7 @@ An R package for downloading and analyzing education finance data from multiple 
 You can install the development version of `edfinr` from GitHub with:
 
 ```r
-# install.packages("devtools")
-# Krista updated it to be "devedfinr" instead of "evedfinr"
-devtools::install_github("bellwetherorg/devedfinr") 
+devtools::install_github("bellwetherorg/edfinr") 
 ```
 
 ## Usage
@@ -19,12 +17,7 @@ devtools::install_github("bellwetherorg/devedfinr")
 The `get_finance_data()` function allows you to download education finance data with options for year ranges, geographic scope, and dataset type (skinny or full).
 
 ```r
-
-# Krista note: for it to work it has to be library(devedfinr). When I did "library(edfinr)" it 
-# didn't work and I got a message that it couldn't be found 
-# library(edfinr) 
-
-library(devedfinr)
+library(edfinr)
 
 # get data for all states for 2022 (uses skinny dataset by default)
 df <- get_finance_data(yr = "2022", geo = "all")
