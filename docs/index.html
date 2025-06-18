@@ -1,0 +1,198 @@
+<h1 id="chp:edfinr"><code>edfinr</code></h1>
+<p>An R package for downloading and analyzing education finance data from multiple sources.</p>
+<h2 id="sec:installation">Installation</h2>
+<p>You can install the development version of <code>edfinr</code> from GitHub with:</p>
+<pre><code class="language-r">devtools::install_github(&quot;bellwetherorg/edfinr&quot;) 
+</code></pre>
+<h2 id="sec:usage">Usage</h2>
+<h3 id="sec:getting-finance-data">Getting Finance Data</h3>
+<p>The <code>get_finance_data()</code> function allows you to download education finance data with options for year ranges, geographic scope, and dataset type (skinny or full).</p>
+<pre><code class="language-r">library(edfinr)
+
+# get data for all states for 2022 (uses skinny dataset by default)
+df &lt;- get_finance_data(yr = &quot;2022&quot;, geo = &quot;all&quot;)
+
+# get data for Kentucky for 2020-2022
+ky_data &lt;- get_finance_data(yr = &quot;2020:2022&quot;, geo = &quot;KY&quot;)
+
+# get data for multiple states for all available years
+regional_data &lt;- get_finance_data(yr = &quot;all&quot;, geo = &quot;IN,KY,OH,TN&quot;)
+
+# get full dataset with detailed expenditure variables
+# the full dataset includes 48 additional expenditure variables
+full_data &lt;- get_finance_data(yr = &quot;2022&quot;, geo = &quot;KY&quot;, dataset_type = &quot;full&quot;)
+
+# compare dataset sizes
+skinny_data &lt;- get_finance_data(yr = &quot;2022&quot;, geo = &quot;KY&quot;, dataset_type = &quot;skinny&quot;)
+ncol(skinny_data)  # 41 variables
+ncol(full_data)    # 89 variables
+</code></pre>
+<h3 id="sec:exploring-available-variables">Exploring Available Variables</h3>
+<p>The <code>list_variables()</code> function helps you understand what data is available in each dataset type.</p>
+<pre><code class="language-r"># view all variables in the skinny dataset (default)
+vars_skinny &lt;- list_variables()
+nrow(vars_skinny)  # 41 variables
+
+# view all variables in the full dataset
+vars_full &lt;- list_variables(dataset_type = &quot;full&quot;)
+nrow(vars_full)    # 89 variables
+
+# filter variables by category
+revenue_vars &lt;- list_variables(category = &quot;revenue&quot;)
+expenditure_vars &lt;- list_variables(dataset_type = &quot;full&quot;, category = &quot;expenditure&quot;)
+
+# see what categories are available
+unique(list_variables(dataset_type = &quot;full&quot;)$category)
+# [1] &quot;id&quot; &quot;time&quot; &quot;geographic&quot; &quot;demographic&quot; &quot;revenue&quot; &quot;expenditure&quot; &quot;economic&quot; &quot;governance&quot;
+
+# view variable details
+list_variables() |&gt;
+  filter(category == &quot;revenue&quot;) |&gt;
+  select(name, description)
+
+# get list of valid state codes
+states &lt;- get_states()
+</code></pre>
+<h3 id="sec:working-with-the-data">Working with the Data</h3>
+<pre><code class="language-r">library(tidyverse)
+
+# basic analysis with skinny dataset
+get_finance_data(yr = &quot;2022&quot;, geo = &quot;KY&quot;) |&gt;
+  select(dist_name, enroll, rev_total_pp, exp_cur_pp) |&gt;
+  arrange(desc(rev_total_pp)) |&gt;
+  head(10)
+
+# analysis with full dataset - examining detailed expenditures
+get_finance_data(yr = &quot;2022&quot;, geo = &quot;KY&quot;, dataset_type = &quot;full&quot;) |&gt;
+  select(ncesid, state, dist_name, enroll, exp_covid_total) |&gt;
+  filter(!is.na(exp_covid_total)) |&gt;
+  mutate(exp_covid_total_pp = exp_covid_total / enroll) |&gt;
+  arrange(desc(exp_covid_total_pp))
+
+</code></pre>
+<h2 id="sec:data-sources">Data Sources</h2>
+<p>This package provides access to education finance data from:</p>
+<ul>
+<li><a href="https://nces.ed.gov/ccd/files.asp">NCES CCD F-33 Data</a></li>
+<li>NCES CCD Directory Data via the <a href="https://educationdata.urban.org/documentation/#r">Urban Institute’s <code>educationdata</code> package</a></li>
+<li><a href="https://www.census.gov/programs-surveys/saipe.html">Census Bureau SAIPE Estimates</a></li>
+<li>American Community Survey 5-Year Estimates via <a href="https://walker-data.com/tidycensus/"><code>tidycensus</code> package</a></li>
+<li>U.S Bureau of Labor Statistics <a href="https://data.bls.gov/toppicks?survey=cu">Consumer Price Index for All Urban Consumers (CPI-U)</a></li>
+</ul>
+<h2 id="sec:data-processing-methods">Data Processing Methods</h2>
+<ul>
+<li>Methodology based on process used by <a href="https://github.com/EdBuild/edbuildr"><code>edbuildr</code></a>, which is detailed on a <a href="http://data.edbuild.org/">methodology page</a> and in their <a href="http://viz.edbuild.org/workshops/edbuildr/">workshop documentation</a>.</li>
+<li>The <a href="https://data-dictionary.ed-fund.org/?_gl=1*199anoz*_ga*MTg3MDM3NDg2LjE3MzkzNzAzOTE.*_ga_TGH6XK399M*MTc0NDIyMzY3Ni43LjEuMTc0NDIyMzY4MC4wLjAuMA..">EdFund Data Dictionary</a> informs our handling of F-33 data.</li>
+<li>Revenue adjustments for payments to other school systems follows the approach used by Kristen Blagg, Emily Gutierrez, and Fanny Terrones in <a href="https://apps.urban.org/features/school-funding-trends/files/202204_K12_funding_technical_appendix.pdf">Funding Flows: Which Students Receive a Greater Share of School Funding?</a>.</li>
+<li>Inflation adjustments use an average of second half CPI-U of one year and first half CPI-U of the following year to align with the academic calendar.</li>
+</ul>
+<h2 id="sec:data-processing-detail">Data Processing Detail</h2>
+<h3 id="sec:nces-f-33-survey-data">NCES F-33 Survey Data</h3>
+<p>Data source: NCES Common Core of Data text files of F-33 data from 2011-12 through 2021-22.</p>
+<p>Raw variables selected:</p>
+<ul>
+<li>Basic information: state, leaid, name, yrdata, V33</li>
+<li>Revenue data: totalrev, tlocrev, tstrev, tfedrev</li>
+<li>Expenditure data: c11, u11, v91, v92, c24, l12, m12, d11, q11</li>
+<li>Current expenditure data: ce1, ce2, and ce3</li>
+<li>Detailed expenditure data: z32, z34, v93, v95, v02, k14, e13, z33, v10, e17, v11, v12, e07, v13, v14, e08, v15, v16, e09, v17, v18, v40, v21, v22, v45, v23, v24, v90, v37, v38, e11, v29, v30, v60, v32, v65, ae1, ae2, ae3, ae4, ae5, ae6, ae7, ae8</li>
+</ul>
+<p>Adjustments:</p>
+<ul>
+<li>Rename variables</li>
+<li>Convert district names to title case</li>
+<li>Ensure enrollment is a numeric variable</li>
+<li>Replace <code>-1</code> and <code>-2</code> codes with <code>NA</code> values</li>
+</ul>
+<h3 id="sec:ccd-directory-data">CCD Directory Data</h3>
+<p>Data source: NCES CCD Directory data obtained via the
+<a href="https://educationdata.urban.org/documentation/#r">educationdata</a>
+package.</p>
+<p>Raw variables selected:</p>
+<ul>
+<li>Core district identifiers and location: state, ncesid, county, dist_name, state_leaid</li>
+<li>Institutional details: lea_type, lea_type_id, urbanicity, congressional_dist</li>
+</ul>
+<p>Adjustments:</p>
+<ul>
+<li>Rename variables to more intuitive names</li>
+</ul>
+<h3 id="sec:saipe-poverty-estimates">SAIPE Poverty Estimates</h3>
+<p>Data source: Census Bureau SAIPE Estimates</p>
+<p>Raw variables selected:</p>
+<ul>
+<li>Basic geographic and demographic fields: State Postal Code, State FIPS Code, District ID, Name</li>
+<li>Population estimates: Estimated Total Population, Estimated Population 5-17, and the estimated number of relevant children 5 to 17 years old in poverty</li>
+</ul>
+<p>Adjustments:</p>
+<ul>
+<li>Convert population fields to numeric</li>
+<li>Construct a combined NCES district identifier by concatenating state FIPS and District ID</li>
+</ul>
+<h3 id="sec:acs-5-year-estimates">ACS 5-Year Estimates</h3>
+<p>Data source: American Community Survey 5-Year Estimates accessed via the
+<a href="https://walker-data.com/tidycensus/"><code>tidycensus</code></a> package</p>
+<p>Raw variables selected:</p>
+<ul>
+<li>Economic indicators: Median household income (B19013_001) and median property value (B25077_001)</li>
+<li>Educational attainment: Total population 25 years or older (B15003_001) and subsets of that population holding bachelor’s degrees (B15003_022), master’s degrees (B15003_023), professional degrees (B15003_024), and doctoral degrees (B15003_025).</li>
+<li>Data are pulled for different geographic breakdowns (unified, elementary, and secondary school districts)</li>
+</ul>
+<p>Adjustments:</p>
+<ul>
+<li>Reshape data from long to wide format</li>
+<li>Rename “GEOID” to a standard <code>ncesid</code> and ensure proper formatting of district identifiers</li>
+<li>Convert estimates to numeric as needed</li>
+</ul>
+<h3 id="sec:cpi">CPI</h3>
+<p>Data source: U.S. Bureau of Labor Statistics, specifically the Consumer Price Index for All Urban Consumers (CPI-U)</p>
+<p>Raw variables selected:</p>
+<ul>
+<li>CPI time series data (specific variable names as provided in the raw file)</li>
+</ul>
+<p>Adjustments:</p>
+<ul>
+<li>Calculate an averaged CPI value using the second half of one year and the first half of the following year to align with the academic calendar, with the 2011-12 school year as the baseline year</li>
+<li>Clean and reformat CPI data for consistency across processing scripts</li>
+</ul>
+<h2 id="sec:joining-data">Joining Data</h2>
+<ul>
+<li>The joining process is implemented in the <code>07_edfinr_join_and_exclude.R</code> script.</li>
+<li>Data from the F-33 survey, CCD Directory, ACS (unified, elementary, and secondary), and SAIPE sources are merged using left joins on shared district identifiers (ncesid) and fiscal year.</li>
+<li>The procedure ensures that each district record is enriched with revenue, expenditure, demographic, and economic data.</li>
+</ul>
+<h2 id="sec:revenue-adjustments">Revenue Adjustments</h2>
+<p>Additional transformations are applied after the join:</p>
+<ul>
+<li>Capital expenditures and debt service (C11) are subtrated from state revenues</li>
+<li>Property sales (U11) are subtracted from local revenues</li>
+<li>For Texas LEAs in 2012-13 and earlier, payments to state governments (L12) are subtracted from local revenues</li>
+<li>Payments to other school systems (V91, V92, and Q11) are proportionally subracted from local, state, and federal revenues</li>
+</ul>
+<h2 id="sec:exclusions">Exclusions</h2>
+<ul>
+<li>Districts with enrollment less than 0 are removed.</li>
+<li>Districts with total revenue less than 0 are removed.</li>
+<li>Districts with an invalid LEA type (i.e. where lea_type_id is not one of 1, 2, 3, or 7) are excluded.</li>
+<li>Districts with invalid LEA/school level type (i.e. where schlev is not one of “01”, “02”, or “03”, except for specified CA exceptions) are excluded.</li>
+<li>Districts where total revenue per-pupil is greater than $70,000 in 2011-12 dollars are excluded.</li>
+<li>Districts where total revenue per pupil is less than $500 in 2011-12 dollars are excluded.</li>
+<li>Connecticut LEAs consisting of semi-private high schools are removed (NCES IDs “0905371”, “0905372”, and “0905373”).</li>
+</ul>
+<h2 id="sec:data-notes-and-cautions">Data Notes and Cautions</h2>
+<p>Users should note the following when working with the <code>edfinr</code> datasets:</p>
+<ul>
+<li>Some variables were originally coded with <code>-1</code> to indicate missing values; these have been replaced with <code>NA</code> during processing.</li>
+<li>During data processing, we identified a sharp rise in the number of California districts appearing only from 2019 onward in the data. This reflects the fact that many charter schools became separate LEAs in those years. Beginning in 2018–19, a wave of California charter schools switched to independent CALPADS/CBEDS reporting and thus were assigned their own NCES LEA IDs for the first time. Once in the NCES LEA universe, those new charter‐LEAs automatically show up in the F-33 finance survey (with blanks or flags if they report no finance data), and Census’s SAIPE and ACS school‐district products (which mirror NCES LEA boundaries).</li>
+<li>The joined dataset represents a synthesis of data from multiple sources; discrepancies in source data formats may lead to minor variations.</li>
+<li>Inflation and adjustment factors (e.g., CPI adjustments) are based on averages and may not perfectly reflect local cost variations.</li>
+<li><strong>Caution is advised when comparing data across fiscal years due to potential differences in data collection and processing methods.</strong></li>
+</ul>
+<h2 id="sec:authors">Authors</h2>
+<ul>
+<li><strong>Alex Spurrier</strong> (<a href="mailto:alex.spurrier@bellwether.org">alex.spurrier@bellwether.org</a>)  - Lead developer and package maintainer</li>
+<li><strong>Krista Kaput</strong> - Core development and feature implementation</li>
+<li><strong>Michael Chrzan</strong> - Data processing functions and testing</li>
+</ul>
+<h2 id="sec:license">License</h2>
+<p>MIT License</p>
